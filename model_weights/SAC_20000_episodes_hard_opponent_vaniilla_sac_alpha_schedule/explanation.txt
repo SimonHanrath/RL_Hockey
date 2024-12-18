@@ -1,0 +1,3 @@
+This time with correct action space of 4
+
+Vanilla SAC + alpha scheduling trained for 20k episodes against the hard bot. Basically maxed out after 12k, and now seems to be perfect at playing against the hard opponent.

@@ -7,14 +7,18 @@ import time
 
 if __name__ == '__main__':
     # Create the environment
-    env = h_env.HockeyEnv(mode=h_env.HockeyEnv.NORMAL, keep_mode=True)
+    env = h_env.HockeyEnv()
 
     # Initialize the agent
-    agent = Agent(input_dims=env.observation_space.shape, env=env, 
-                  n_actions=env.action_space.shape[0])
+    agent1 = Agent(input_dims=env.observation_space.shape, env=env, 
+                  n_actions=4)
+
+    agent2 = Agent(input_dims=env.observation_space.shape, env=env, 
+                  n_actions=4)
 
     # Load the agent's trained model
-    agent.load_models()  # Ensure your agent's model is correctly trained or loaded here
+    agent1.load_models()  # Ensure your agent's model is correctly trained or loaded here
+    agent2.load_models()
 
     # Initialize human as Player 1 (left side)
     human_opponent = h_env.HumanOpponent(env, player=1)  # Human controls Player 1
@@ -30,17 +34,19 @@ if __name__ == '__main__':
         print(f"\nStarting Game {i + 1}...")
 
         while not done:
-            time.sleep(0.1)  # Slows the game for better human understanding
+            #time.sleep(0.1)  # Slows the game for better human understanding
             env.render()
 
-            # Human action for Player 1
-            human_action = human_opponent.act(observation)
+            agent1_action = agent1.choose_action(observation)
 
             # Agent action for Player 2
-            agent_action = agent.choose_action(env.obs_agent_two())
+            agent2_action = agent1.choose_action(env.obs_agent_two())
+
+            # Human action for Player 1
+            #human_action = human_opponent.act(observation)
 
             # Combine actions: Human controls Player 1, agent controls Player 2
-            combined_action = np.hstack([human_action, agent_action])
+            combined_action = np.hstack([agent1_action, agent2_action])
 
             # Step the environment
             observation_, reward, done, truncated, info = env.step(combined_action)
