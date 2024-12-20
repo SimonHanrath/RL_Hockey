@@ -12,19 +12,19 @@ if __name__ == '__main__':
     env = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=False)
 
     # Flags to control behavior
-    test_mode = False        # If True, just run the model for testing (no training)
+    test_mode = True       # If True, just run the model for testing (no training)
     resume_training = False  # If True and test_mode=False, load existing model and continue training
 
     # Initialize the agent
     agent = Agent(input_dims=env.observation_space.shape, env=env, n_actions=4)
     
     # Number of games to run
-    n_games = 100
+    n_games = 20000
     best_score = -np.inf
     score_history = []
     avg_score_history = []
 
-    # Initialize TensorBoard writer
+    # Initialize TensorBoard writer (use: tensorboard --logdir=runs)
     writer = SummaryWriter('runs/hockey_sac_training')
 
     # If testing or resuming training, load the model
@@ -70,7 +70,7 @@ if __name__ == '__main__':
                 score += reward
 
                 # Store transition and learn
-                agent.remember(observation, action, reward, observation_, done)
+                agent.store(observation, action, reward, observation_, done)
                 agent.learn()
 
                 observation = observation_
@@ -86,6 +86,7 @@ if __name__ == '__main__':
             # Save model if best score
             if avg_score > best_score:
                 best_score = avg_score
+                print('Saving')
                 agent.save_models()
                 # Save any other training states if needed
                 # agent.save_replay_buffer("replay_buffer_path")

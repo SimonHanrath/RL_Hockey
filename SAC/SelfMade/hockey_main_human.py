@@ -34,7 +34,7 @@ if __name__ == '__main__':
         print(f"\nStarting Game {i + 1}...")
 
         while not done:
-            #time.sleep(0.1)  # Slows the game for better human understanding
+            time.sleep(0.1)  # Slows the game for better human understanding
             env.render()
 
             agent1_action = agent1.choose_action(observation)
@@ -43,10 +43,11 @@ if __name__ == '__main__':
             agent2_action = agent1.choose_action(env.obs_agent_two())
 
             # Human action for Player 1
-            #human_action = human_opponent.act(observation)
+            human_action = human_opponent.act(observation)
 
             # Combine actions: Human controls Player 1, agent controls Player 2
-            combined_action = np.hstack([agent1_action, agent2_action])
+            # combined_action = np.hstack([agent1_action, agent2_action])
+            combined_action = np.hstack([human_action, agent2_action])
 
             # Step the environment
             observation_, reward, done, truncated, info = env.step(combined_action)

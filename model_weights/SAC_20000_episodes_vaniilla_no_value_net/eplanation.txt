@@ -1,0 +1,1 @@
+Same as 20k before but this time with modified agent wothout value and taregt value net instead it uses critic net to retrieve value otherwise exactly thes same
