@@ -1,8 +1,3 @@
-This time with correct action space of 4
-
-Vanilla SAC + alpha scheduling trained for 20k episodes against the hard bot. Basically maxed out after 12k, and now seems to be perfect at playing against the hard opponent.
-
-
 alpha: 0.0003
 beta: 0.0003
 gamma: 0.99
@@ -16,4 +11,6 @@ reward_scale: 2
 checkpoint_dir: "SAC/SelfMade/tmp/checkpoints"
 log_dir: "runs/hockey_sac_training"
 n_games: 20000
-resume_training: false
+resume_training: False
+opponent_update_interval: 20
+win_rate_threshold: 0.6

@@ -3,54 +3,168 @@ import torch as T
 import torch.nn.functional as F
 import numpy as np
 from replayBuffer import ReplayBuffer
-from nets import ActorNetwork, CriticNetwork
+from nets import ActorNet, CriticNet
+import pickle
 
-class Agent():
+class Agent:
+    """
+    A reinforcement learning agent implementing the Soft Actor-Critic (SAC) algorithm.
+    This agent includes the actor and critic networks, a replay buffer, and methods
+    for training and saving/loading models.
+    """
+
     def __init__(self, alpha=0.0003, beta=0.0003, input_dims=[18],
-                 env=None, gamma=0.99, n_actions=4, max_size=1000000, tau=0.005,
-                 layer1_size=256, layer2_size=256, batch_size=256, reward_scale=2):
-        self.gamma = gamma
-        self.tau = tau
-        self.memory = ReplayBuffer(max_size, input_dims, n_actions)
+             env=None, gamma=0.99, n_actions=4, max_size=1000000, tau=0.005,
+             layer1_size=256, layer2_size=256, batch_size=256, reward_scale=2, checkpoint_dir='SAC/SelfMade/tmp/checkpoints'):
+        """
+        Initializes the SAC agent with its networks, replay buffer, and hyperparameters.
+
+        Args:
+            alpha (float): Learning rate for the actor network.
+            beta (float): Learning rate for the critic networks.
+            input_dims (list): Dimensions of the input (state) space.
+            env (gym.Env): Environment to derive action space from.
+            gamma (float): Discount factor for future rewards.
+            n_actions (int): Number of actions in the action space.
+            max_size (int): Maximum size of the replay buffer.
+            tau (float): Target network update rate.
+            layer1_size (int): Number of neurons in the first hidden layer of networks.
+            layer2_size (int): Number of neurons in the second hidden layer of networks.
+            batch_size (int): Size of the training batch.
+            reward_scale (float): Scale for rewards.
+            checkpoint_dir (str): Directory to save and load model checkpoints.
+        """
+        self.env = env 
+        self.gamma = gamma  
+        self.tau = tau  
+        self.memory = ReplayBuffer(max_size, input_dims, n_actions) 
+        self.checkpoint_dir = checkpoint_dir
         self.batch_size = batch_size
         self.n_actions = n_actions
-        self.scale = reward_scale
+        self.scale = reward_scale  
 
-        self.actor = ActorNetwork(alpha, input_dims, n_actions=n_actions,
-                                  name='actor', max_action=[1]*n_actions)
-        self.critic_1 = CriticNetwork(beta, input_dims, n_actions=n_actions, name='critic_1')
-        self.critic_2 = CriticNetwork(beta, input_dims, n_actions=n_actions, name='critic_2')
+        # initialize actor and critic networks
+        self.actor = ActorNet(alpha, input_dims, n_actions=n_actions, 
+                            fc1_dims=layer1_size, fc2_dims=layer2_size,
+                            name='actor', max_action=[1] * n_actions, checkpoint_dir=checkpoint_dir)
+                            
+        self.critic_1 = CriticNet(beta, input_dims, n_actions=n_actions, 
+                                fc1_dims=layer1_size, fc2_dims=layer2_size, 
+                                name='critic_1', checkpoint_dir=checkpoint_dir)
+        
+        self.critic_2 = CriticNet(beta, input_dims, n_actions=n_actions, 
+                                fc1_dims=layer1_size, fc2_dims=layer2_size, 
+                                name='critic_2', checkpoint_dir=checkpoint_dir)
 
-        # automatic temperature (alpha) adjustment
-        self.target_entropy = -np.prod(env.action_space.shape).astype(np.float32)
-        self.log_alpha = T.tensor(0.0, dtype=T.float32, requires_grad=True, device=self.actor.device)
-        self.alpha = self.log_alpha.exp()
-        self.alpha_optimizer = T.optim.Adam([self.log_alpha], lr=alpha)
+        # automatic entropy temperature (alpha) tuning
+        self.target_entropy = -np.prod(env.action_space.shape).astype(np.float32)  # Target entropy for SAC
+        self.log_alpha = T.tensor(0.0, dtype=T.float32, requires_grad=True, device=self.actor.device)  # Log of alpha
+        self.alpha = self.log_alpha.exp()  # Alpha, controlling exploration-exploitation tradeoff
+        self.alpha_optimizer = T.optim.Adam([self.log_alpha], lr=alpha)  # Optimizer for alpha
+
 
     def choose_action(self, observation):
-        state = T.Tensor([observation]).to(self.actor.device)
-        actions, _ = self.actor.sample_normal(state, reparameterize=False)
-        return actions.cpu().detach().numpy()[0]
+        """
+        Chooses an action based on the current policy (actor network).
+
+        Args:
+            observation (np.ndarray): Current state observation.
+
+        Returns:
+            np.ndarray: Selected action.
+        """
+        state = T.from_numpy(observation).float().unsqueeze(0).to(self.actor.device)
+        actions, _ = self.actor.sample_normal(state, reparameterize=False)  
+        return actions.cpu().detach().numpy()[0] 
 
     def store(self, state, action, reward, new_state, done):
+        """
+        Stores a transition in the replay buffer.
+
+        Args:
+            state (np.ndarray): Current state.
+            action (np.ndarray): Action taken.
+            reward (float): Reward received.
+            new_state (np.ndarray): Next state.
+            done (bool): Whether the episode has terminated.
+        """
         self.memory.store_transition(state, action, reward, new_state, done)
 
-
     def save_models(self):
-        print('.... saving models ....')
+        """
+        Saves the parameters of the actor and critic networks, replay buffer, and optimizer states to checkpoint files.
+        """
+        print('Saving models and optimizer states...')
         self.actor.save_checkpoint()
         self.critic_1.save_checkpoint()
         self.critic_2.save_checkpoint()
-        # value networks removed
+
+        # save Replay Buffer
+        buffer_path = os.path.join(self.checkpoint_dir, 'replay_buffer.pt')
+        T.save(self.memory, buffer_path)
 
     def load_models(self):
-        print('.... loading models ....')
+        """
+        Loads the parameters of the actor and critic networks from checkpoint files.
+        """
+        print('loading models ..')
         self.actor.load_checkpoint()
         self.critic_1.load_checkpoint()
         self.critic_2.load_checkpoint()
-        # value networks removed
 
+        # load Replay Buffer
+        buffer_path = os.path.join(self.checkpoint_dir, 'replay_buffer.pt')
+        if os.path.exists(buffer_path):
+            self.memory = T.load(buffer_path, map_location=self.actor.device)
+            print(f'Replay buffer loaded from {buffer_path}')
+        else:
+            print(f'Replay buffer file not found at {buffer_path}. Starting with an empty buffer.')
+
+
+    def clone(self):
+        """
+        Creates a clone of the current agent with identical weights and parameters.
+
+        Returns:
+            Agent: A new instance of the Agent class with the same weights and parameters.
+        """
+        # Create a new instance of the agent
+        clone_agent = Agent(
+            alpha=self.actor.optimizer.param_groups[0]['lr'],  # Learning rate for actor
+            beta=self.critic_1.optimizer.param_groups[0]['lr'],  # Learning rate for critics
+            input_dims=self.actor.input_dims,  # Input dimensions
+            env=self.env,  # Use the environment from the current agent
+            gamma=self.gamma,  # Discount factor
+            n_actions=self.n_actions,  # Number of actions
+            max_size=self.memory.mem_size,  # Replay buffer size
+            tau=self.tau,  # Target network update rate
+            layer1_size=self.actor.fc1_dims,  # First hidden layer size
+            layer2_size=self.actor.fc2_dims,  # Second hidden layer size
+            batch_size=self.batch_size,  # Batch size
+            reward_scale=self.scale,  # Reward scaling factor
+            checkpoint_dir=self.actor.checkpoint_dir  # Checkpoint directory
+        )
+
+        # Copy weights from the current agent to the cloned agent
+        clone_agent.actor.load_state_dict(self.actor.state_dict())
+        clone_agent.critic_1.load_state_dict(self.critic_1.state_dict())
+        clone_agent.critic_2.load_state_dict(self.critic_2.state_dict())
+
+        # Copy alpha and log_alpha values
+        clone_agent.alpha = self.alpha.clone()
+        clone_agent.log_alpha = self.log_alpha.clone()
+
+        return clone_agent
+
+        
     def learn(self, writer=None, step=None):
+        """
+        Updates the networks (actor, critics, and alpha) based on sampled experiences.
+
+        Args:
+            writer (SummaryWriter, optional): TensorBoard writer for logging.
+            step (int, optional): Current training step for logging.
+        """
         if self.memory.mem_cntr < self.batch_size:
             return
 
@@ -106,4 +220,3 @@ class Agent():
             writer.add_scalar('Temperature/Alpha', self.alpha.item(), step)
             writer.add_scalar('Loss/Critic_1_Loss', critic_1_loss.item(), step)
             writer.add_scalar('Loss/Critic_2_Loss', critic_2_loss.item(), step)
-
