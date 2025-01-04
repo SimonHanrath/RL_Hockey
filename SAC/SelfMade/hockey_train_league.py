@@ -130,44 +130,6 @@ def train_agent_self_play(agent, env, n_games=20000,
     print("Training completed. Logs saved to TensorBoard.")
 
 
-
-def train_agent(agent, env, n_games=20000, log_dir='runs/hockey_sac_training'):
-    """
-    Train the SAC agent by playing against whatever default behavior 'env' offers.
-    In many cases, this might be a single-agent environment or a built-in bot.
-    """
-    writer = SummaryWriter(log_dir)
-    best_score = -np.inf
-    score_history = []
-
-    for i in range(n_games):
-        score = run_episode(
-            agent=agent,
-            env=env,
-            opponent=None,
-            episode_index=i,
-            writer=writer
-        )
-
-        score_history.append(score)
-        avg_score = np.mean(score_history[-100:])
-
-        writer.add_scalar('Rewards/Episode_Score', score, i)
-        writer.add_scalar('Rewards/Avg_Score', avg_score, i)
-
-        # save models if we have a new "best" average score
-        if avg_score > best_score + 0.5:
-            best_score = avg_score
-            print("[train_agent] New best average score. Saving model...")
-            agent.save_models()
-
-        print(f"[train_agent] Episode {i}, Score: {score:.2f}, Avg Score: {avg_score:.2f}")
-
-    writer.close()
-    env.close()
-    print("[train_agent] Training completed. Logs saved to TensorBoard.")
-
-
 if __name__ == '__main__':
 
     env = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=False)

@@ -68,13 +68,21 @@ class CriticNet(nn.Module):
         x = F.relu(x)
         return self.q(x)
 
-    def save_checkpoint(self):
+    def save_checkpoint(self, file_path=None):
         """Saves the network's parameters to a checkpoint file."""
-        T.save(self.state_dict(), self.checkpoint_file)
+        if file_path != None:
+            T.save(self.state_dict(), file_path)
+        else: 
+            T.save(self.state_dict(), self.checkpoint_file)
 
-    def load_checkpoint(self):
+
+    def load_checkpoint(self, file_path=None):
         """Loads the network's parameters from a checkpoint file."""
-        self.load_state_dict(T.load(self.checkpoint_file))
+        
+        if file_path != None:
+            self.load_state_dict(T.load(file_path))
+        else: 
+            self.load_state_dict(T.load(self.checkpoint_file))
 
 
 class ActorNet(nn.Module):
@@ -172,10 +180,18 @@ class ActorNet(nn.Module):
 
         return action, log_probs
 
-    def save_checkpoint(self):
+    def save_checkpoint(self, file_path=None):
         """Saves the network's parameters to a checkpoint file."""
-        T.save(self.state_dict(), self.checkpoint_file)
+        if file_path != None:
+            T.save(self.state_dict(), file_path)
+        else: 
+            T.save(self.state_dict(), self.checkpoint_file)
 
-    def load_checkpoint(self):
+
+    def load_checkpoint(self, file_path=None):
         """Loads the network's parameters from a checkpoint file."""
-        self.load_state_dict(T.load(self.checkpoint_file))
+        
+        if file_path != None:
+            self.load_state_dict(T.load(file_path))
+        else: 
+            self.load_state_dict(T.load(self.checkpoint_file))

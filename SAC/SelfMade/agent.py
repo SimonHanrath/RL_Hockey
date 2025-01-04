@@ -57,7 +57,7 @@ class Agent:
                                 name='critic_2', checkpoint_dir=checkpoint_dir)
 
         # automatic entropy temperature (alpha) tuning
-        self.target_entropy = -np.prod(env.action_space.shape).astype(np.float32)  # Target entropy for SAC
+        self.target_entropy = -3#-np.prod(env.action_space.shape).astype(np.float32)  # Target entropy for SAC reduced for more exploration focus
         self.log_alpha = T.tensor(0.0, dtype=T.float32, requires_grad=True, device=self.actor.device)  # Log of alpha
         self.alpha = self.log_alpha.exp()  # Alpha, controlling exploration-exploitation tradeoff
         self.alpha_optimizer = T.optim.Adam([self.log_alpha], lr=alpha)  # Optimizer for alpha
@@ -90,35 +90,23 @@ class Agent:
         """
         self.memory.store_transition(state, action, reward, new_state, done)
 
-    def save_models(self):
+    def save_models(self, file_path_actor=None, file_path_critic1=None, file_path_critic2=None):
         """
         Saves the parameters of the actor and critic networks, replay buffer, and optimizer states to checkpoint files.
         """
         print('Saving models and optimizer states...')
-        self.actor.save_checkpoint()
-        self.critic_1.save_checkpoint()
-        self.critic_2.save_checkpoint()
+        self.actor.save_checkpoint(file_path_actor)
+        self.critic_1.save_checkpoint(file_path_critic1)
+        self.critic_2.save_checkpoint(file_path_critic2)
 
-        # save Replay Buffer
-        buffer_path = os.path.join(self.checkpoint_dir, 'replay_buffer.pt')
-        T.save(self.memory, buffer_path)
-
-    def load_models(self):
+    def load_models(self, file_path_actor=None, file_path_critic1=None, file_path_critic2=None):
         """
         Loads the parameters of the actor and critic networks from checkpoint files.
         """
         print('loading models ..')
-        self.actor.load_checkpoint()
-        self.critic_1.load_checkpoint()
-        self.critic_2.load_checkpoint()
-
-        # load Replay Buffer
-        buffer_path = os.path.join(self.checkpoint_dir, 'replay_buffer.pt')
-        if os.path.exists(buffer_path):
-            self.memory = T.load(buffer_path, map_location=self.actor.device)
-            print(f'Replay buffer loaded from {buffer_path}')
-        else:
-            print(f'Replay buffer file not found at {buffer_path}. Starting with an empty buffer.')
+        self.actor.load_checkpoint(file_path_actor)
+        self.critic_1.load_checkpoint(file_path_critic1)
+        self.critic_2.load_checkpoint(file_path_critic2)
 
 
     def clone(self):
