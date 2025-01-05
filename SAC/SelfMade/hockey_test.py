@@ -49,7 +49,7 @@ if __name__ == '__main__':
         checkpoint_dir=config['checkpoint_dir']
     )
 
-    i = 15000
+    i = 19800
     j = 10000
 
     # Load the agent's trained model
@@ -85,8 +85,8 @@ if __name__ == '__main__':
 
             human_action = human_opponent.act(observation)
 
-            combined_action = np.hstack([agent1_action, agent2_action])
-            #combined_action = np.hstack([human_action, agent2_action])
+            #combined_action = np.hstack([agent1_action, agent2_action])
+            combined_action = np.hstack([human_action, agent2_action])
             #combined_action = agent1_action
 
             observation_, reward, done, truncated, info = env.step(combined_action)

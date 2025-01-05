@@ -57,7 +57,7 @@ class Agent:
                                 name='critic_2', checkpoint_dir=checkpoint_dir)
 
         # automatic entropy temperature (alpha) tuning
-        self.target_entropy = -3#-np.prod(env.action_space.shape).astype(np.float32)  # Target entropy for SAC reduced for more exploration focus
+        self.target_entropy = -np.prod(env.action_space.shape).astype(np.float32)  # Target entropy for SAC reduced for more exploration focus
         self.log_alpha = T.tensor(0.0, dtype=T.float32, requires_grad=True, device=self.actor.device)  # Log of alpha
         self.alpha = self.log_alpha.exp()  # Alpha, controlling exploration-exploitation tradeoff
         self.alpha_optimizer = T.optim.Adam([self.log_alpha], lr=alpha)  # Optimizer for alpha
