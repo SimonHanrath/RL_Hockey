@@ -1,6 +1,5 @@
 import numpy as np
 from SAC.SelfMade.agent.agent import Agent
-import matplotlib.pyplot as plt
 import hockey.hockey_env as h_env
 from torch.utils.tensorboard import SummaryWriter
 import yaml
@@ -42,8 +41,11 @@ def run_episode(agent, env, opponent=None, episode_index=0, writer=None):
             opp_action = opponent.choose_action(env.obs_agent_two())
             combined_action = np.hstack([agent_action, opp_action])
             obs_, reward, done, truncated, info = env.step(combined_action)
-        else: # Agent vs. built-in bot
+        else: # agent vs. built-in bot
             obs_, reward, done, truncated, info = env.step(agent_action)
+
+        """if episode_index >=1500:
+            reward -= info['reward_closeness_to_puck'] # TODO: hacky, do not forget to remove"""
 
         done = done or truncated
         score += reward
@@ -52,7 +54,7 @@ def run_episode(agent, env, opponent=None, episode_index=0, writer=None):
         agent.store(obs, agent_action, reward, obs_, done)
         agent.learn(writer=writer, step=episode_index)
 
-        #env.render()
+        env.render()
         obs = obs_
 
     return score
@@ -63,11 +65,11 @@ def train_agent_self_play(agent, env, n_games=20000,
                           opponent_update_interval=20, log_file="training_log.csv"):
     """
     Train the SAC agent, alternating between self-play (agent vs. older agent)
-    and playing against a built-in 'hard mode' bot environment.
+    and playing against a built-in bot environment.
 
     Args:
         agent:  SAC agent instance.
-        env:   A HockeyEnv_BasicOpponent or HockeyEnv environment for self-play.
+        env:   A HockeyEnv_BasicOpponent
         n_games (int): Total number of training episodes.
         log_dir (str): Directory path for TensorBoard logging.
         opponent_update_interval (int): How often (in episodes) to update the older agent.
@@ -75,12 +77,13 @@ def train_agent_self_play(agent, env, n_games=20000,
     writer = SummaryWriter(log_dir)
     score_history = []
 
-    # This is your built-in environment with a "hard" scripted bot:
-    env_bot = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=False)
+    # Initialize log file for plotting later
+    with open(log_file, mode="w", newline="") as file:
+        csv_writer = csv.writer(file)
+        csv_writer.writerow(["epsiode", "reward"])
 
     # Initial clone of agent -> older version
     opponent = agent.clone()
-    wins = 0
 
     for i in range(n_games):
         # Randomly pick whether to do self-play or agent-vs-bot
@@ -98,28 +101,26 @@ def train_agent_self_play(agent, env, n_games=20000,
             print('playing against bot')
             score = run_episode(
                 agent=agent,
-                env=env_bot,
+                env=env,
                 opponent=None,
                 episode_index=i,
                 writer=writer
             )
-
-        # agent "wins" if score >= 0
-        if score >= 0:
-            wins += 1
 
         score_history.append(score)
         avg_score = np.mean(score_history[-100:])
         writer.add_scalar('Rewards/Episode_Score', score, i)
         writer.add_scalar('Rewards/Avg_Score', avg_score, i)
 
+
+        # add reward to csv file
+        with open(log_file, mode="a", newline="") as file:
+            csv_writer = csv.writer(file)
+            csv_writer.writerow([i,score])
+
+
         # Opponent update & save models periodically
         if i % opponent_update_interval == 0 and i > 0:
-            win_rate = wins / opponent_update_interval
-            writer.add_scalar(f'win_rate_last_{opponent_update_interval}', win_rate, i)
-            wins = 0
-            print(f"[Episode {i}] Win rate over last {opponent_update_interval} = {win_rate:.2f}, "
-                  f"Avg Score: {avg_score:.2f}")
             print(f"Updating opponent at Episode {i}...")
             opponent = agent.clone()
 
@@ -135,7 +136,6 @@ def train_agent_self_play(agent, env, n_games=20000,
 
     writer.close()
     env.close()
-    env_bot.close()
     print("Training completed. Logs saved to TensorBoard.")
 
 
@@ -188,9 +188,11 @@ def train_agent(agent, env, n_games=20000, log_dir='runs/hockey_sac_training', l
 
 
 if __name__ == '__main__':
-
-    env = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=True)
     
+
+    #define weak opponent
+    #env = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=False)
+    env = h_env.HockeyEnv_BasicOpponent(mode=1, weak_opponent=False)
     agent = Agent(
         alpha=config['alpha'],
         beta=config['beta'],

@@ -142,7 +142,7 @@ def rank_agents(weight_directory, versions):
 
 if __name__ == '__main__':
     weight_directory = 'SAC/SelfMade/tmp/checkpoints'
-    versions = [10000, 12400, 15000, 16400, 19800]    
+    versions = [2600, 5000, 7400, 10000, 12400, 15000, 16400, 19800]    
     scores_vs_agents, scores_vs_bot = rank_agents(weight_directory, versions)
     print(dict(sorted(scores_vs_agents.items(), key=lambda item: item[1])))
     print(dict(sorted(scores_vs_bot.items(), key=lambda item: item[1])))

@@ -1,2 +1,0 @@
-#I used exactly the SAC model from the video only changed to alpha scheduling
-#trained from scratch to 10000 episodes in the defense mode performance is pretty good and was still improving, but pretty maxed out.
