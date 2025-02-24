@@ -68,7 +68,7 @@ def train_agent_self_play_league(agent, env, n_games=20000,
     # Initialize log file for plotting later
     with open(log_file, mode="w", newline="") as file:
         csv_writer = csv.writer(file)
-        csv_writer.writerow(["epsiode", "reward", 'opponend'])
+        csv_writer.writerow(["episode", "reward", 'opponent'])
 
     score_history = []
 
@@ -230,6 +230,27 @@ def train_agent_self_play_league(agent, env, n_games=20000,
                                         file_path_critic1=os.path.join(tmp, f'critic_1_19800'),
                                         file_path_critic2=os.path.join(tmp, f'critic_2_19800'))
     
+    agent_trained_vs_league2 = Agent(
+        alpha=0,#config['alpha'],
+        beta=config['beta'],
+        input_dims=env.observation_space.shape,
+        env=env,
+        gamma=config['gamma'],
+        n_actions=config['n_actions'],
+        max_size=config['max_size'],
+        tau=config['tau'],
+        layer1_size=config['layer1_size'],
+        layer2_size=config['layer2_size'],
+        batch_size=config['batch_size'],
+        reward_scale=config['reward_scale'],
+        checkpoint_dir=config['checkpoint_dir']
+    )
+
+    tmp = "model_weights/for_report/League/league_run_3/checkpoints"
+    agent_trained_vs_league2.load_models(file_path_actor=os.path.join(tmp, f'actor_sac_23000'),
+                                        file_path_critic1=os.path.join(tmp, f'critic_1_23000'),
+                                        file_path_critic2=os.path.join(tmp, f'critic_2_23000'))
+    
     
     
 
@@ -252,8 +273,8 @@ def train_agent_self_play_league(agent, env, n_games=20000,
               'agent_trained_vs_strong_bot': {'env' : env, 'games':game_memory_size*[0], 'total_games':0, 'self': agent_trained_vs_strong_bot},
               'agent_trained_vs_attack_bot': {'env' : env, 'games':game_memory_size*[0], 'total_games':0, 'self': agent_trained_vs_attack_bot},
               'agent_trained_vs_defense_bot': {'env' : env, 'games':game_memory_size*[0], 'total_games':0, 'self': agent_trained_vs_defense_bot},
-              'agent_trained_vs_league1': {'env' : env, 'games':game_memory_size*[0], 'total_games':0, 'self': agent_trained_vs_league1}
-
+              'agent_trained_vs_league1': {'env' : env, 'games':game_memory_size*[0], 'total_games':0, 'self': agent_trained_vs_league1},
+              'agent_trained_vs_league2': {'env' : env, 'games':game_memory_size*[0], 'total_games':0, 'self': agent_trained_vs_league2}
               }
     
     for i in range(n_games):

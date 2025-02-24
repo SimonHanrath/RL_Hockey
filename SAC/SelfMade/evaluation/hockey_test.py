@@ -50,17 +50,17 @@ if __name__ == '__main__':
         checkpoint_dir=config['checkpoint_dir']
     )
 
-    i = 'sac'
-    j = 'sac'
+    i = 23000
+    j = 19800
 
     # Load the agent's trained model
-    agent1.load_models(file_path_actor=os.path.join(config['checkpoint_dir'], f'actor_{i}'),
+    agent1.load_models(file_path_actor=os.path.join(config['checkpoint_dir'], f'actor_sac_{i}'),
                                     file_path_critic1=os.path.join(config['checkpoint_dir'], f'critic_1_{i}'),
                                     file_path_critic2=os.path.join(config['checkpoint_dir'], f'critic_2_{i}'))
     
-    agent2.load_models(file_path_actor=os.path.join(config['checkpoint_dir'], f'actor_{j}'),
-                                    file_path_critic1=os.path.join(config['checkpoint_dir'], f'critic_1_{j}'),
-                                    file_path_critic2=os.path.join(config['checkpoint_dir'], f'critic_2_{j}'))
+    agent2.load_models(file_path_actor=os.path.join('model_weights/for_report/League/league_run_2/checkpoints', f'actor_sac_{j}'),
+                                    file_path_critic1=os.path.join('model_weights/for_report/League/league_run_2/checkpoints', f'critic_1_{j}'),
+                                    file_path_critic2=os.path.join('model_weights/for_report/League/league_run_2/checkpoints', f'critic_2_{j}'))
     
     """tmp = "model_weights/SAC_selfplay2/checkpoints"
     agent2.load_models(file_path_actor=os.path.join(tmp, f'actor_sac_{j}'),
@@ -85,7 +85,6 @@ if __name__ == '__main__':
             env.render()
 
             agent1_action = agent1.choose_action(observation)
-
 
             agent2_action = agent2.choose_action(env.obs_agent_two())
 
