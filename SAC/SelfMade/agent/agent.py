@@ -69,50 +69,12 @@ class Agent:
         self.critic_1_target.load_state_dict(self.critic_1.state_dict())
         self.critic_2_target.load_state_dict(self.critic_2.state_dict())
 
-        # Automatic entropy temperature (alpha) tuning
+        # for automatic alpha tuning
         self.target_entropy = -np.prod(env.action_space.shape).astype(np.float32)  
         self.log_alpha = T.tensor(0.0, dtype=T.float32, requires_grad=True, device=self.actor.device)  
         self.alpha = self.log_alpha.exp()  
         self.alpha_optimizer = T.optim.Adam([self.log_alpha], lr=alpha)  
 
-
-    def choose_action(self, observation):
-        """
-        Chooses an action based on the current policy (actor network).
-
-        Args:
-            observation (np.ndarray): Current state observation.
-
-        Returns:
-            np.ndarray: Selected action.
-        """
-        state = T.from_numpy(observation).float().unsqueeze(0).to(self.actor.device)
-        actions, _ = self.actor.sample_normal(state, reparameterize=False)  
-        return actions.cpu().detach().numpy()[0]  
-
-    def store(self, state, action, reward, new_state, done):
-        """
-        Stores a transition in the replay buffer.
-
-        Args:
-            state (np.ndarray): Current state.
-            action (np.ndarray): Action taken.
-            reward (float): Reward received.
-            new_state (np.ndarray): Next state.
-            done (bool): Whether the episode has terminated.
-        """
-        self.memory.store_transition(state, action, reward, new_state, done)
-
-    def soft_update_target_networks(self):
-        """
-        Performs Polyak Averaging to slowly update the target networks.
-        """
-        with T.no_grad():
-            for target_param, param in zip(self.critic_1_target.parameters(), self.critic_1.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-
-            for target_param, param in zip(self.critic_2_target.parameters(), self.critic_2.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 
     def save_models(self, file_path_actor=None, file_path_critic1=None, file_path_critic2=None, file_path_critic1_target=None, file_path_critic2_target=None):
@@ -175,6 +137,44 @@ class Agent:
         clone_agent.log_alpha = self.log_alpha.clone()
 
         return clone_agent
+    def choose_action(self, observation):
+        """
+        Chooses an action based on the current policy (actor network).
+
+        Args:
+            observation (np.ndarray): Current state observation.
+
+        Returns:
+            np.ndarray: Selected action.
+        """
+        state = T.from_numpy(observation).float().unsqueeze(0).to(self.actor.device)
+        actions, _ = self.actor.sample_normal(state, reparameterize=False)  
+        return actions.cpu().detach().numpy()[0]  
+
+    def store(self, state, action, reward, new_state, done):
+        """
+        Stores a transition in the replay buffer.
+
+        Args:
+            state (np.ndarray): Current state.
+            action (np.ndarray): Action taken.
+            reward (float): Reward received.
+            new_state (np.ndarray): Next state.
+            done (bool): Whether the episode has terminated.
+        """
+        self.memory.store_transition(state, action, reward, new_state, done)
+
+    def soft_update_target_networks(self):
+        """
+        Performs Polyak Averaging to slowly update the target networks.
+        """
+        with T.no_grad():
+            for target_param, param in zip(self.critic_1_target.parameters(), self.critic_1.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for target_param, param in zip(self.critic_2_target.parameters(), self.critic_2.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
 
         
     def learn(self, writer=None, step=None):
