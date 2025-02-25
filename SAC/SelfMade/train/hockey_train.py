@@ -55,7 +55,7 @@ def run_episode(agent, env, opponent=None, episode_index=0, writer=None):
 
 def train_agent_self_play(agent, env, n_games=20000,
                           log_dir='runs/hockey_sac_training',
-                          opponent_update_interval=20, log_file="plots/training_log.csv"):
+                          opponent_update_interval=20, log_file="SAC/plots/training_log.csv"):
     """
     Train the SAC agent, alternating between self-play (agent vs. older agent)
     and playing against a built-in bot environment.
@@ -133,7 +133,7 @@ def train_agent_self_play(agent, env, n_games=20000,
 
 
 
-def train_agent(agent, env, n_games=20000, log_dir='runs/hockey_sac_training', log_file="training_log.csv"):
+def train_agent(agent, env, n_games=20000, log_dir='runs/hockey_sac_training', log_file="SAC/plots/training_log.csv"):
     """
     Train the SAC agent by playing against whatever default behavior 'env' offers.
     In many cases, this might be a single-agent environment or a built-in bot.
@@ -165,10 +165,10 @@ def train_agent(agent, env, n_games=20000, log_dir='runs/hockey_sac_training', l
         # save models if we have a new "best" average score
         if avg_score > best_score + 0.5:
             best_score = avg_score
-            print("[train_agent] New best average score. Saving model...")
+            print("New best average score. Saving model...")
             agent.save_models()
 
-        print(f"[train_agent] Episode {i}, Score: {score:.2f}, Avg Score: {avg_score:.2f}")
+        print(f"Episode {i}, Score: {score:.2f}, Avg Score: {avg_score:.2f}")
 
         # add reward to csv file
         with open(log_file, mode="a", newline="") as file:
@@ -177,7 +177,7 @@ def train_agent(agent, env, n_games=20000, log_dir='runs/hockey_sac_training', l
 
     writer.close()
     env.close()
-    print("[train_agent] Training completed. Logs saved to TensorBoard.")
+    print("[Training completed. Logs saved to TensorBoard.")
 
 
 if __name__ == '__main__':

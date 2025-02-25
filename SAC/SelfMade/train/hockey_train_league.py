@@ -53,7 +53,7 @@ def run_episode(agent, env, opponent=None, episode_index=0, writer=None):
 
 def train_agent_self_play_league(agent, env, n_games=20000,
                           log_dir='runs/hockey_sac_training',
-                          opponent_update_interval=20, log_file="plots/training_log.csv"):
+                          opponent_update_interval=20, log_file="SAC/plots/training_log.csv"):
     """
     Train the SAC agent against a predifined set of opponents
 
