@@ -7,7 +7,7 @@ import yaml
 import os
 
 # load config file for model and training specifications
-with open(os.path.join('SAC', 'SelfMade', 'train', 'config.yaml'), 'r') as f:
+with open(os.path.join('SAC', 'SelfMade', 'config.yaml'), 'r') as f:
     config = yaml.safe_load(f)
 
 
@@ -141,7 +141,7 @@ def rank_agents(weight_directory, versions):
 
 
 if __name__ == '__main__':
-    weight_directory = 'SAC/SelfMade/tmp/checkpoints'
+    weight_directory = 'model_weights/for_report/League/league_run_final/checkpoints'
     versions = [2600, 5000, 7400, 10000, 12400, 15000, 16400, 19800, 22000, 23000, 21000]    
     scores_vs_agents, scores_vs_bot = rank_agents(weight_directory, versions)
     print(dict(sorted(scores_vs_agents.items(), key=lambda item: item[1])))

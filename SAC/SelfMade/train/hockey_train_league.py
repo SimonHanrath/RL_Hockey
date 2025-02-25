@@ -10,7 +10,7 @@ import random
 import csv
 
 # load config file for model and training specifications
-with open(os.path.join('SAC', 'SelfMade', 'train', 'config.yaml'), 'r') as f:
+with open(os.path.join('SAC', 'SelfMade', 'config.yaml'), 'r') as f:
     config = yaml.safe_load(f)
 
 
@@ -53,7 +53,7 @@ def run_episode(agent, env, opponent=None, episode_index=0, writer=None):
 
 def train_agent_self_play_league(agent, env, n_games=20000,
                           log_dir='runs/hockey_sac_training',
-                          opponent_update_interval=20, log_file="training_log.csv"):
+                          opponent_update_interval=20, log_file="plots/training_log.csv"):
     """
     Train the SAC agent against a predifined set of opponents
 
@@ -250,14 +250,6 @@ def train_agent_self_play_league(agent, env, n_games=20000,
     agent_trained_vs_league2.load_models(file_path_actor=os.path.join(tmp, f'actor_sac_23000'),
                                         file_path_critic1=os.path.join(tmp, f'critic_1_23000'),
                                         file_path_critic2=os.path.join(tmp, f'critic_2_23000'))
-    
-    
-    
-
-    
-    
-    
-
 
 
     game_memory_size = 20
@@ -279,9 +271,6 @@ def train_agent_self_play_league(agent, env, n_games=20000,
     
     for i in range(n_games):
 
-        
-        
-        #opponent_weights = [1/(0.1+np.mean(opponent['games'])) for opponent in league.values()] # maybe make the 0.1 into hyperparameter?
         opponent_weights = [game_memory_size-np.sum(opponent['games'])+1 for opponent in league.values()] # more games won = less likely to play against that agent
         normalized_weights = [weight / sum(opponent_weights) for weight in opponent_weights]
 
@@ -377,7 +366,4 @@ if __name__ == '__main__':
     train_agent_self_play_league(agent, env, n_games=config['n_games'], log_dir=config['log_dir'],
                            opponent_update_interval=config['opponent_update_interval'])
     
-
-    #train_agent(agent, env, n_games=config['n_games'], log_dir=config['log_dir'])
-
 

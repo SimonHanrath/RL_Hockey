@@ -8,12 +8,11 @@ layer1_size: 256
 layer2_size: 256
 batch_size: 256
 reward_scale: 2
-checkpoint_dir: "SAC/SelfMade/tmp/checkpoints"
+checkpoint_dir: "model_weights/tmp/checkpoints"
 log_dir: "runs/hockey_sac_training"
 n_games: 50000
 resume_training: False
 opponent_update_interval: 20
-win_rate_threshold: 0.6
 
 
 

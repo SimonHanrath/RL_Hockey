@@ -12,12 +12,8 @@ python -m SAC.SelfMade.train.hockey_train
 """
 
 # load config file for model and training specifications
-with open(os.path.join('SAC', 'SelfMade', 'train', 'config.yaml'), 'r') as f:
+with open(os.path.join('SAC', 'SelfMade', 'config.yaml'), 'r') as f:
     config = yaml.safe_load(f)
-
-
-
-
 
 
 def run_episode(agent, env, opponent=None, episode_index=0, writer=None):
@@ -44,9 +40,6 @@ def run_episode(agent, env, opponent=None, episode_index=0, writer=None):
         else: # agent vs. built-in bot
             obs_, reward, done, truncated, info = env.step(agent_action)
 
-        """if episode_index >=1500:
-            reward -= info['reward_closeness_to_puck'] # TODO: hacky, do not forget to remove"""
-
         done = done or truncated
         score += reward
 
@@ -54,7 +47,7 @@ def run_episode(agent, env, opponent=None, episode_index=0, writer=None):
         agent.store(obs, agent_action, reward, obs_, done)
         agent.learn(writer=writer, step=episode_index)
 
-        env.render()
+        #env.render()
         obs = obs_
 
     return score
@@ -62,7 +55,7 @@ def run_episode(agent, env, opponent=None, episode_index=0, writer=None):
 
 def train_agent_self_play(agent, env, n_games=20000,
                           log_dir='runs/hockey_sac_training',
-                          opponent_update_interval=20, log_file="training_log.csv"):
+                          opponent_update_interval=20, log_file="plots/training_log.csv"):
     """
     Train the SAC agent, alternating between self-play (agent vs. older agent)
     and playing against a built-in bot environment.
@@ -82,11 +75,11 @@ def train_agent_self_play(agent, env, n_games=20000,
         csv_writer = csv.writer(file)
         csv_writer.writerow(["epsiode", "reward"])
 
-    # Initial clone of agent -> older version
+    # initial clone of agent -> older version
     opponent = agent.clone()
 
     for i in range(n_games):
-        # Randomly pick whether to do self-play or agent-vs-bot
+        # randomly pick whether to do self-play or agent-vs-bot
         is_self_play = (np.random.randint(0, 2) == 0)
 
         if is_self_play:
@@ -119,7 +112,7 @@ def train_agent_self_play(agent, env, n_games=20000,
             csv_writer.writerow([i,score])
 
 
-        # Opponent update & save models periodically
+        # opponent update & save models periodically
         if i % opponent_update_interval == 0 and i > 0:
             print(f"Updating opponent at Episode {i}...")
             opponent = agent.clone()
@@ -191,8 +184,8 @@ if __name__ == '__main__':
     
 
     #define weak opponent
-    #env = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=False)
-    env = h_env.HockeyEnv_BasicOpponent(mode=1, weak_opponent=False)
+    env = h_env.HockeyEnv_BasicOpponent(mode=0, weak_opponent=True)
+    
     agent = Agent(
         alpha=config['alpha'],
         beta=config['beta'],

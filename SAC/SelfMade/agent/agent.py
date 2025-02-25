@@ -6,6 +6,7 @@ from SAC.SelfMade.agent.replayBuffer import ReplayBuffer
 from SAC.SelfMade.agent.nets import ActorNet, CriticNet
 import pickle
 
+
 class Agent:
     """
     A reinforcement learning agent implementing the Soft Actor-Critic (SAC) algorithm.
@@ -42,8 +43,7 @@ class Agent:
         self.batch_size = batch_size
         self.n_actions = n_actions
         self.scale = reward_scale  
-
-        # initialize actor and critic networks
+        
         self.actor = ActorNet(alpha, input_dims, n_actions=n_actions, 
                             fc1_dims=layer1_size, fc2_dims=layer2_size,
                             name='actor', max_action=[1] * n_actions, checkpoint_dir=checkpoint_dir)
@@ -56,11 +56,24 @@ class Agent:
                                 fc1_dims=layer1_size, fc2_dims=layer2_size, 
                                 name='critic_2', checkpoint_dir=checkpoint_dir)
 
-        # automatic entropy temperature (alpha) tuning
-        self.target_entropy = -np.prod(env.action_space.shape).astype(np.float32)  # Target entropy for SAC reduced for more exploration focus
-        self.log_alpha = T.tensor(0.0, dtype=T.float32, requires_grad=True, device=self.actor.device)  # Log of alpha
-        self.alpha = self.log_alpha.exp()  # Alpha, controlling exploration-exploitation tradeoff
-        self.alpha_optimizer = T.optim.Adam([self.log_alpha], lr=alpha)  # Optimizer for alpha
+        # initialize Target Networks 
+        self.critic_1_target = CriticNet(beta, input_dims, n_actions=n_actions,
+                                         fc1_dims=layer1_size, fc2_dims=layer2_size,
+                                         name='critic_1_target', checkpoint_dir=checkpoint_dir)
+
+        self.critic_2_target = CriticNet(beta, input_dims, n_actions=n_actions,
+                                         fc1_dims=layer1_size, fc2_dims=layer2_size,
+                                         name='critic_2_target', checkpoint_dir=checkpoint_dir)
+
+        # copy initial weights to target networks
+        self.critic_1_target.load_state_dict(self.critic_1.state_dict())
+        self.critic_2_target.load_state_dict(self.critic_2.state_dict())
+
+        # Automatic entropy temperature (alpha) tuning
+        self.target_entropy = -np.prod(env.action_space.shape).astype(np.float32)  
+        self.log_alpha = T.tensor(0.0, dtype=T.float32, requires_grad=True, device=self.actor.device)  
+        self.alpha = self.log_alpha.exp()  
+        self.alpha_optimizer = T.optim.Adam([self.log_alpha], lr=alpha)  
 
 
     def choose_action(self, observation):
@@ -75,7 +88,7 @@ class Agent:
         """
         state = T.from_numpy(observation).float().unsqueeze(0).to(self.actor.device)
         actions, _ = self.actor.sample_normal(state, reparameterize=False)  
-        return actions.cpu().detach().numpy()[0] 
+        return actions.cpu().detach().numpy()[0]  
 
     def store(self, state, action, reward, new_state, done):
         """
@@ -90,7 +103,19 @@ class Agent:
         """
         self.memory.store_transition(state, action, reward, new_state, done)
 
-    def save_models(self, file_path_actor=None, file_path_critic1=None, file_path_critic2=None):
+    def soft_update_target_networks(self):
+        """
+        Performs Polyak Averaging to slowly update the target networks.
+        """
+        with T.no_grad():
+            for target_param, param in zip(self.critic_1_target.parameters(), self.critic_1.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for target_param, param in zip(self.critic_2_target.parameters(), self.critic_2.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+
+    def save_models(self, file_path_actor=None, file_path_critic1=None, file_path_critic2=None, file_path_critic1_target=None, file_path_critic2_target=None):
         """
         Saves the parameters of the actor and critic networks, replay buffer, and optimizer states to checkpoint files.
         """
@@ -98,15 +123,19 @@ class Agent:
         self.actor.save_checkpoint(file_path_actor)
         self.critic_1.save_checkpoint(file_path_critic1)
         self.critic_2.save_checkpoint(file_path_critic2)
+        self.critic_1_target.save_checkpoint(file_path_critic1_target)
+        self.critic_2_target.save_checkpoint(file_path_critic2_target)
 
-    def load_models(self, file_path_actor=None, file_path_critic1=None, file_path_critic2=None):
+    def load_models(self, file_path_actor=None, file_path_critic1=None, file_path_critic2=None, file_path_critic1_target=None, file_path_critic2_target=None):
         """
         Loads the parameters of the actor and critic networks from checkpoint files.
         """
-        print('loading models ..')
+        print('Loading models...')
         self.actor.load_checkpoint(file_path_actor)
         self.critic_1.load_checkpoint(file_path_critic1)
         self.critic_2.load_checkpoint(file_path_critic2)
+        self.critic_1_target.load_checkpoint(file_path_critic1_target)
+        self.critic_2_target.load_checkpoint(file_path_critic2_target)
 
 
     def clone(self):
@@ -116,27 +145,30 @@ class Agent:
         Returns:
             Agent: A new instance of the Agent class with the same weights and parameters.
         """
-        # Create a new instance of the agent
         clone_agent = Agent(
-            alpha=self.actor.optimizer.param_groups[0]['lr'],  # Learning rate for actor
-            beta=self.critic_1.optimizer.param_groups[0]['lr'],  # Learning rate for critics
-            input_dims=self.actor.input_dims,  # Input dimensions
-            env=self.env,  # Use the environment from the current agent
-            gamma=self.gamma,  # Discount factor
-            n_actions=self.n_actions,  # Number of actions
-            max_size=self.memory.mem_size,  # Replay buffer size
-            tau=self.tau,  # Target network update rate
-            layer1_size=self.actor.fc1_dims,  # First hidden layer size
-            layer2_size=self.actor.fc2_dims,  # Second hidden layer size
-            batch_size=self.batch_size,  # Batch size
-            reward_scale=self.scale,  # Reward scaling factor
-            checkpoint_dir=self.actor.checkpoint_dir  # Checkpoint directory
+            alpha=self.actor.optimizer.param_groups[0]['lr'],  
+            beta=self.critic_1.optimizer.param_groups[0]['lr'],  
+            input_dims=self.actor.input_dims,  
+            env=self.env,  
+            gamma=self.gamma,  
+            n_actions=self.n_actions,  
+            max_size=self.memory.mem_size,  
+            tau=self.tau,  
+            layer1_size=self.actor.fc1_dims,  
+            layer2_size=self.actor.fc2_dims,  
+            batch_size=self.batch_size,  
+            reward_scale=self.scale,  
+            checkpoint_dir=self.actor.checkpoint_dir  
         )
 
         # Copy weights from the current agent to the cloned agent
         clone_agent.actor.load_state_dict(self.actor.state_dict())
         clone_agent.critic_1.load_state_dict(self.critic_1.state_dict())
         clone_agent.critic_2.load_state_dict(self.critic_2.state_dict())
+
+        # Also copy the target critic networks
+        clone_agent.critic_1_target.load_state_dict(self.critic_1_target.state_dict())
+        clone_agent.critic_2_target.load_state_dict(self.critic_2_target.state_dict())
 
         # Copy alpha and log_alpha values
         clone_agent.alpha = self.alpha.clone()
@@ -164,11 +196,11 @@ class Agent:
         state = T.tensor(state, dtype=T.float).to(self.actor.device)
         action = T.tensor(action, dtype=T.float).to(self.actor.device)
 
-        # Compute target Q-values without a value network
+        # Compute target Q-values using target networks
         with T.no_grad():
             next_actions, next_log_probs = self.actor.sample_normal(state_, reparameterize=False)
-            q1_next = self.critic_1.forward(state_, next_actions)
-            q2_next = self.critic_2.forward(state_, next_actions)
+            q1_next = self.critic_1_target.forward(state_, next_actions)
+            q2_next = self.critic_2_target.forward(state_, next_actions)
             q_next = T.min(q1_next, q2_next) - self.alpha * next_log_probs
             q_target = self.scale * reward + self.gamma * (1 - done.float()) * q_next.view(-1)
 
@@ -200,6 +232,9 @@ class Agent:
         alpha_loss.backward()
         self.alpha_optimizer.step()
         self.alpha = self.log_alpha.exp()
+
+        # Soft update target networks
+        self.soft_update_target_networks()
 
         # Logging
         if writer is not None and step is not None:
