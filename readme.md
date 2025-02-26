@@ -9,3 +9,4 @@ environment supports continuous and discrete action spaces, where agents can eit
 forces for movement, rotation, and shooting or select from predefined discrete actions mapped to equiv-
 alent movements.
 
+![](SAC/plots/fig_SAC_TrainingVsOpponent.png)
