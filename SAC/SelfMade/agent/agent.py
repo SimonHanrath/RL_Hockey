@@ -7,6 +7,15 @@ from SAC.SelfMade.agent.nets import ActorNet, CriticNet
 import pickle
 
 
+
+"""
+-> Disclaimer: The basic structure was partially inspired by: https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/SAC.
+However mutliple non trivial changes have been made. Such as removing the need for value networks, adding q-value target networks and polyak averaging, 
+adding automatic entropy adjustment, adding saving and loading options and other restructuring.
+
+"""
+
+
 class Agent:
     """
     A reinforcement learning agent implementing the Soft Actor-Critic (SAC) algorithm.
@@ -23,7 +32,7 @@ class Agent:
         Args:
             alpha (float): Learning rate for the actor network.
             beta (float): Learning rate for the critic networks.
-            input_dims (list): Dimensions of the input (state) space.
+            input_dims (list): Dimensionscr of the input (state) space.
             env (gym.Env): Environment to derive action space from.
             gamma (float): Discount factor for future rewards.
             n_actions (int): Number of actions in the action space.

@@ -7,6 +7,12 @@ from torch.distributions.normal import Normal
 import numpy as np
 
 
+
+"""
+-> Disclaimer: The basic structure was partially inspired by: https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/SAC.
+"""
+
+
 class ActorNet(nn.Module):
     """
     Actor network for the Soft Actor-Critic algorithm.

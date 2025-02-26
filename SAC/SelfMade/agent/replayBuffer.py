@@ -1,5 +1,12 @@
 import numpy as np
 
+
+
+"""
+-> Disclaimer: The tructure was inspired by: https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/SAC.
+"""
+
+
 class ReplayBuffer:
     """
     A fixed-size buffer to store transitions, implemented with PyTorch tensors.
