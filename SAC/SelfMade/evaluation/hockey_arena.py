@@ -6,6 +6,11 @@ import hockey.hockey_env as h_env
 import yaml
 import os
 
+
+"""
+Quick and dirty code to run multiple agents against each other and compare their reward against each other
+"""
+
 # load config file for model and training specifications
 with open(os.path.join('SAC', 'SelfMade', 'config.yaml'), 'r') as f:
     config = yaml.safe_load(f)

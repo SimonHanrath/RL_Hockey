@@ -5,6 +5,12 @@ import hockey.hockey_env as h_env
 import yaml
 import os
 
+
+"""
+Lets two players (human,bot or agent) play against each other
+"""
+
+
 # load config file for model and training specifications
 with open(os.path.join('SAC', 'SelfMade', 'config.yaml'), 'r') as f:
     config = yaml.safe_load(f)
