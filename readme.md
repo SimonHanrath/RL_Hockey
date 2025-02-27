@@ -1,4 +1,3 @@
-# Laser Hockey Reinforcement Learning Challenge: Team HAT 🎩
 ## PPO and SAC agent for 2D Hockey env
 
 This repository contains two reinforcement learning algorithms, Soft Actor-Critic (SAC) and Proximal
